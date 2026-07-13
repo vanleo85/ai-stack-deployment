@@ -1,0 +1,38 @@
+services:
+  vllm-qwen:
+    image: vllm/vllm-openai:latest
+    restart: unless-stopped
+    ports:
+      - "${QWEN_PORT}:${VLLM_PORT}"
+    environment:
+      VLLM_MODEL: ${QWEN_MODEL}
+      VLLM_PORT: ${VLLM_PORT}
+      HF_HOME: "/root/.cache/huggingface"
+    volumes:
+      - ./data/hf-cache:/root/.cache/huggingface
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:${VLLM_PORT}/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 180s
+    command:
+      [
+        "vllm", "serve",
+        "${VLLM_MODEL}",
+        "--dtype", "bfloat16",
+        "--tensor-parallel-size", "1",
+        "--max-model-len", "16384",
+        "--max-num-seqs", "32",
+        "--max-num-batched-tokens", "8192",
+        "--host", "0.0.0.0",
+        "--port", "${VLLM_PORT}",
+        "--trust-remote-code"
+      ]
