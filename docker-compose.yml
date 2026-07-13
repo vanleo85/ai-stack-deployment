@@ -26,7 +26,7 @@ services:
     command:
       [
         "vllm", "serve",
-        "${VLLM_MODEL}",
+        "${QWEN_MODEL}",
         "--dtype", "bfloat16",
         "--tensor-parallel-size", "1",
         "--max-model-len", "16384",
