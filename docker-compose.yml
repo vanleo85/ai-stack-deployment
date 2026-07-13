@@ -23,10 +23,11 @@ services:
       timeout: 10s
       retries: 5
       start_period: 180s
+    entrypoint: ["vllm"]
     command:
       [
-        "vllm", "serve",
-        "${QWEN_MODEL}",
+        "serve",
+        "--model", "${QWEN_MODEL}",
         "--dtype", "bfloat16",
         "--tensor-parallel-size", "1",
         "--max-model-len", "16384",
