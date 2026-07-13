@@ -5,9 +5,8 @@ services:
     ports:
       - "${QWEN_PORT}:${VLLM_PORT}"
     environment:
-      VLLM_MODEL: ${QWEN_MODEL}
-      VLLM_PORT: ${VLLM_PORT}
       HF_HOME: "/root/.cache/huggingface"
+      # HF_TOKEN: ${HF_TOKEN}  # раскомментировать для приватных моделей
     volumes:
       - ./data/hf-cache:/root/.cache/huggingface
     deploy:
@@ -27,7 +26,7 @@ services:
     command:
       [
         "serve",
-        "--model", "${QWEN_MODEL}",
+        "${QWEN_MODEL}",
         "--dtype", "bfloat16",
         "--tensor-parallel-size", "1",
         "--max-model-len", "16384",
