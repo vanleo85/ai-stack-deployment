@@ -104,7 +104,11 @@ celerybeat.pid
 *.sage.py
 
 # Environments
+# Only .env files with .example suffix may be committed
 .env
+.env.*
+!.env.example
+!.env.*.example
 .venv
 env/
 venv/
@@ -161,4 +165,5 @@ workspace/
 Chart.lock
 /out/
 /tmp/
-docs/
+
+/docs/superpowers/
