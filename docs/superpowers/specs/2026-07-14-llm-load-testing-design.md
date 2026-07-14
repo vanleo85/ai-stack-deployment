@@ -97,6 +97,8 @@ Bash script with usage examples:
 
 Template with all `VLLM_*` variables and comments.
 
+**Rule:** Only `.env` files with `.example` suffix may be committed. Actual `.env` files are gitignored. Users copy `.env.test.example` to `.env.test` and fill in real values.
+
 ## Documentation
 
 ### `llm_tests/README.md`
