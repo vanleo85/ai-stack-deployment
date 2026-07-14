@@ -44,8 +44,9 @@ Single source of truth for all env-based configuration:
 | `VLLM_MODEL` | `Qwen/Qwen2.5-1.5B-Instruct` | Model name |
 | `VLLM_API_KEY` | `token-abc123` | Bearer token |
 | `VLLM_REQUEST_TIMEOUT` | `300` | Request timeout in seconds |
-| `VLLM_TOP_K` | `40` | Top-K sampling parameter |
+| `VLLM_TOP_K` | `40` | Top-K sampling parameter (via `extra_body`) |
 | `VLLM_TEMPERATURE` | `0.0` | Sampling temperature |
+| `VLLM_SEED` | `None` | Random seed for reproducible prompts (empty = random) |
 
 ### `profiles.py`
 
@@ -69,13 +70,14 @@ Weights reflect realistic usage patterns (balanced chat is most common).
 - `build_messages(profile_name: str) -> List[Dict]` — chat messages assembly using `random_prompt()`
 - `build_payload(profile_name: str) -> Dict` — full API payload
 
-Prompts are generated from curated templates per profile category (short QA, chat, RAG context, long context) rather than random characters. This produces realistic tokenization behavior.
+Prompts are generated from curated templates per profile category (short QA, chat, RAG context, long context) rather than random characters. This produces realistic tokenization behavior. 3-5 templates per category, randomly selected at runtime. `rand_text()` retained as fallback for stress-testing edge cases.
 
 ### `locustfile.py`
 
 - Class `VllmUser(HttpUser)` with `wait_time = between(1.0, 3.0)` — realistic user pacing
+- Auth: `Authorization: Bearer {VLLM_API_KEY}` header set in `on_start()`
 - One `@task` method per profile, decorated with `@tag(profile_name)`
-- `run_profile()` handles request, validates response (status 200, valid JSON, has `choices`)
+- `run_profile()` validates: HTTP 200, valid JSON, non-empty `choices` array, presence of `usage` object (`prompt_tokens`, `completion_tokens`, `total_tokens`)
 - Event listeners for test start/stop logging
 
 ### `requirements.txt`
@@ -125,13 +127,28 @@ Quick-start section:
 
 ## Review Notes (Perplexity Reason, 2026-07-14)
 
-Applied improvements:
+### Round 1 — Applied:
 - `wait_time` changed from `between(0.1, 1.0)` to `between(1.0, 3.0)` — more realistic pacing
 - Added `VLLM_HOST` env var for base URL configuration
 - Replaced `rand_text()` with prompt templates for realistic tokenization
 
-Rejected recommendations (out of scope):
+### Round 1 — Rejected:
 - Multiple User classes per profile — overkill, tags are sufficient
 - Retry/backoff strategies — load testing, not chaos engineering
 - Batching/observability env vars — server-side config
 - Per-profile wait_time — uniform range is sufficient
+
+### Round 2 — Applied:
+- Clarified auth header format: `Authorization: Bearer <key>`
+- Enhanced response validation: non-empty `choices` + `usage` object
+- Added `VLLM_SEED` env var for reproducible prompts
+- Documented template count: 3-5 per category
+- Clarified `top_k` via `extra_body` (vLLM API specifics)
+
+### Round 2 — Rejected:
+- Two-tier validation (soft/strict) — overkill
+- Observability hooks — out of scope (standard Locust metrics)
+- Rate limiting/backoff — out of scope
+- CI/CD mockable mode — out of scope
+- Data privacy — test data only
+- Ramp-up phase — `--spawn-rate` handles this
