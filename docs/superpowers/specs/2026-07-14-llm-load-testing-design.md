@@ -39,6 +39,7 @@ Single source of truth for all env-based configuration:
 
 | Variable | Default | Description |
 |---|---|---|
+| `VLLM_HOST` | `http://localhost:8000` | vLLM server base URL |
 | `VLLM_BASE_PATH` | `/v1/chat/completions` | API endpoint path |
 | `VLLM_MODEL` | `Qwen/Qwen2.5-1.5B-Instruct` | Model name |
 | `VLLM_API_KEY` | `token-abc123` | Bearer token |
@@ -63,13 +64,16 @@ Weights reflect realistic usage patterns (balanced chat is most common).
 
 ### `utils.py`
 
-- `rand_text(length: int) -> str` — random text generation
-- `build_messages(profile_name: str) -> List[Dict]` — chat messages assembly
-- `build_payload(profile_name: str) Dict` — full API payload
+- `rand_text(length: int) -> str` — random text generation (fallback)
+- `random_prompt(profile_name: str) -> str` — realistic prompt from template pool, scaled to profile's `prompt_chars`
+- `build_messages(profile_name: str) -> List[Dict]` — chat messages assembly using `random_prompt()`
+- `build_payload(profile_name: str) -> Dict` — full API payload
+
+Prompts are generated from curated templates per profile category (short QA, chat, RAG context, long context) rather than random characters. This produces realistic tokenization behavior.
 
 ### `locustfile.py`
 
-- Class `VllmUser(HttpUser)` with `wait_time = between(0.1, 1.0)`
+- Class `VllmUser(HttpUser)` with `wait_time = between(1.0, 3.0)` — realistic user pacing
 - One `@task` method per profile, decorated with `@tag(profile_name)`
 - `run_profile()` handles request, validates response (status 200, valid JSON, has `choices`)
 - Event listeners for test start/stop logging
@@ -118,3 +122,16 @@ Quick-start section:
 - CI/CD integration
 - Functional/smoke tests (pytest)
 - Dockerized Locust
+
+## Review Notes (Perplexity Reason, 2026-07-14)
+
+Applied improvements:
+- `wait_time` changed from `between(0.1, 1.0)` to `between(1.0, 3.0)` — more realistic pacing
+- Added `VLLM_HOST` env var for base URL configuration
+- Replaced `rand_text()` with prompt templates for realistic tokenization
+
+Rejected recommendations (out of scope):
+- Multiple User classes per profile — overkill, tags are sufficient
+- Retry/backoff strategies — load testing, not chaos engineering
+- Batching/observability env vars — server-side config
+- Per-profile wait_time — uniform range is sufficient
