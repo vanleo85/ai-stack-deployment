@@ -1,6 +1,13 @@
 """Environment-based configuration for LLM load tests."""
 
 import os
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+# Auto-load .env.test from the llm_tests directory (if present)
+_env_file = Path(__file__).parent / ".env.test"
+load_dotenv(_env_file)
 
 VLLM_HOST = os.getenv("VLLM_HOST", "http://localhost:8000")
 VLLM_BASE_PATH = os.getenv("VLLM_BASE_PATH", "/v1/chat/completions")
