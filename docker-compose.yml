@@ -39,10 +39,73 @@ services:
         "--port", "${VLLM_PORT}",
         "--trust-remote-code",
         "--max-model-len", "${VLLM_MAX_MODEL_LEN:-16384}",
-        "--gpu-memory-utilization", "${VLLM_GPU_MEMORY_UTILIZATION:-0.92}",
-        "--max-num-seqs", "${VLLM_MAX_NUM_SEQS:-128}",
-        "--max-num-batched-tokens", "${VLLM_MAX_NUM_BATCHED_TOKENS:-16384}",
+        "--gpu-memory-utilization", "${VLLM_GPU_MEMORY_UTILIZATION:-0.65}",
+        "--max-num-seqs", "${VLLM_MAX_NUM_SEQS:-32}",
+        "--max-num-batched-tokens", "${VLLM_MAX_NUM_BATCHED_TOKENS:-4096}",
         "--enable-chunked-prefill",
         "--enable-prefix-caching",
-        "--scheduling-policy", "${VLLM_SCHEDULING_POLICY:-fcfs}"
+        "--scheduling-policy", "${VLLM_SCHEDULING_POLICY:-fcfs}",
+        "--enforce-eager"
       ]
+
+  embedding:
+    image: ghcr.io/huggingface/text-embeddings-inference:latest
+    restart: unless-stopped
+    ports:
+      - "${EMBEDDING_PORT:-6006}:80"
+    environment:
+      HF_HOME: "/data"
+      # HF_TOKEN: ${HF_TOKEN}
+    volumes:
+      - ./data/hf-cache:/data
+    # NOTE: No GPU reservation — runs on CPU to share GPU with vLLM
+    # bge-m3-v2 is fast enough on CPU for most workloads
+    command:
+      [
+        "--model-id", "${EMBEDDING_MODEL:-BAAI/bge-m3-v2}",
+        "--dtype", "float16",
+        "--max-batch-tokens", "16384",
+        "--max-client-batch-size", "32"
+      ]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:80/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
+
+  reranker:
+    image: ghcr.io/huggingface/text-embeddings-inference:latest
+    restart: unless-stopped
+    ports:
+      - "${RERANKER_PORT:-6007}:80"
+    environment:
+      HF_HOME: "/data"
+      # HF_TOKEN: ${HF_TOKEN}
+    volumes:
+      - ./data/hf-cache:/data
+    # NOTE: No GPU reservation — runs on CPU to share GPU with vLLM
+    # bge-reranker-v2-m3 is fast enough on CPU for most workloads
+    command:
+      [
+        "--model-id", "${RERANKER_MODEL:-BAAI/bge-reranker-v2-m3}",
+        "--dtype", "float16",
+        "--max-batch-tokens", "8192",
+        "--max-client-batch-size", "16"
+      ]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:80/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
