@@ -5,6 +5,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
+# Add parent dir to PYTHONPATH so `from llm_tests.…` resolves
+export PYTHONPATH="${SCRIPT_DIR}/..:${PYTHONPATH:-}"
+
 # Load env if exists
 if [ -f .env.test ]; then
     set -a
