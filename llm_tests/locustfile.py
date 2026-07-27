@@ -18,7 +18,7 @@ from llm_tests.utils import build_payload
 
 
 class VllmUser(HttpUser):
-    wait_time = between(1.0, 3.0)
+    # wait_time = between(1.0, 3.0)
 
     def on_start(self):
         self.client.headers.update(

@@ -42,8 +42,6 @@ services:
         "--gpu-memory-utilization", "${VLLM_GPU_MEMORY_UTILIZATION:-0.92}",
         "--max-num-seqs", "${VLLM_MAX_NUM_SEQS:-64}",
         "--max-num-batched-tokens", "${VLLM_MAX_NUM_BATCHED_TOKENS:-16384}",
-        "--enable-chunked-prefill",
-        "--enable-prefix-caching",
         "--scheduling-policy", "${VLLM_SCHEDULING_POLICY:-fcfs}"
       ]
 
