@@ -52,7 +52,7 @@ services:
       ]
 
   embedding:
-    image: ghcr.io/huggingface/text-embeddings-inference:latest
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-latest
     restart: unless-stopped
     ports:
       - "${EMBEDDING_PORT:-6006}:80"
@@ -83,7 +83,7 @@ services:
         max-file: "3"
 
   reranker:
-    image: ghcr.io/huggingface/text-embeddings-inference:latest
+    image: ghcr.io/huggingface/text-embeddings-inference:cpu-latest
     restart: unless-stopped
     ports:
       - "${RERANKER_PORT:-6007}:80"
