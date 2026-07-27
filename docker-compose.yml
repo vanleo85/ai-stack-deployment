@@ -8,6 +8,8 @@ services:
     environment:
       HF_HOME: "/root/.cache/huggingface"
       HF_TOKEN: ${HF_TOKEN}
+      # API ключ для аутентификации клиентов (OpenAI Bearer token)
+      VLLM_API_KEY: ${VLLM_API_KEY}
       # vLLM flags — передаются в entrypoint.sh для добавления CLI-аргументов
       VLLM_ENFORCE_EAGER: ${VLLM_ENFORCE_EAGER:-false}
       VLLM_ENABLE_CHUNKED_PREFILL: ${VLLM_ENABLE_CHUNKED_PREFILL:-true}
