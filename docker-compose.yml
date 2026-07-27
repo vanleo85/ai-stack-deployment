@@ -58,7 +58,7 @@ services:
       - "${EMBEDDING_PORT:-6006}:80"
     environment:
       HF_HOME: "/data"
-      # HF_TOKEN: ${HF_TOKEN}
+      HF_TOKEN: ${HF_TOKEN}
     volumes:
       - ./data/hf-cache:/data
     # NOTE: No GPU reservation — runs on CPU to share GPU with vLLM
@@ -89,7 +89,7 @@ services:
       - "${RERANKER_PORT:-6007}:80"
     environment:
       HF_HOME: "/data"
-      # HF_TOKEN: ${HF_TOKEN}
+      HF_TOKEN: ${HF_TOKEN}
     volumes:
       - ./data/hf-cache:/data
     # NOTE: No GPU reservation — runs on CPU to share GPU with vLLM
