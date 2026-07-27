@@ -65,8 +65,8 @@ services:
     # bge-m3-v2 is fast enough on CPU for most workloads
     command:
       [
-        "--model-id", "${EMBEDDING_MODEL:-BAAI/bge-m3-v2}",
-        "--dtype", "float16",
+        "--model-id", "${EMBEDDING_MODEL:-BAAI/bge-m3}",
+        "--dtype", "float32",
         "--max-batch-tokens", "16384",
         "--max-client-batch-size", "32"
       ]
@@ -97,7 +97,7 @@ services:
     command:
       [
         "--model-id", "${RERANKER_MODEL:-BAAI/bge-reranker-v2-m3}",
-        "--dtype", "float16",
+        "--dtype", "float32",
         "--max-batch-tokens", "8192",
         "--max-client-batch-size", "16"
       ]
