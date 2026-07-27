@@ -41,7 +41,6 @@ services:
       [
         "${QWEN_MODEL}",
         "--dtype", "bfloat16",
-        "--quantization", "awq",
         "--tensor-parallel-size", "1",
         "--host", "0.0.0.0",
         "--port", "${VLLM_PORT}",

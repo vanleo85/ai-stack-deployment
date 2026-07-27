@@ -28,7 +28,7 @@ PROFILES: Dict[str, Dict[str, Any]] = {
         "system": "Answer only from the provided context and be precise.",
     },
     "long_context": {
-        "prompt_chars": 16000,
+        "prompt_chars": 10000,
         "max_tokens": 256,
         "system": "You summarize and reason over long context windows.",
     },
