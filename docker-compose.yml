@@ -7,7 +7,11 @@ services:
       - "${VLLM_METRICS_PORT:-9090}:9090"
     environment:
       HF_HOME: "/root/.cache/huggingface"
-      # HF_TOKEN: ${HF_TOKEN}  # раскомментировать для приватных моделей
+      HF_TOKEN: ${HF_TOKEN}
+      # vLLM flags — передаются в entrypoint.sh для добавления CLI-аргументов
+      VLLM_ENFORCE_EAGER: ${VLLM_ENFORCE_EAGER:-false}
+      VLLM_ENABLE_CHUNKED_PREFILL: ${VLLM_ENABLE_CHUNKED_PREFILL:-true}
+      VLLM_ENABLE_PREFIX_CACHING: ${VLLM_ENABLE_PREFIX_CACHING:-true}
     volumes:
       - ./data/hf-cache:/root/.cache/huggingface
       - ./vllm/entrypoint.sh:/usr/local/bin/entrypoint.sh:ro
