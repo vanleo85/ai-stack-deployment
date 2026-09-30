@@ -25,13 +25,23 @@ docker compose up -d reranker-gpu
 curl http://localhost:6008/health
 ```
 
-Smoke test (same payload shape as `build/test_models.md`):
+Smoke test (`POST /rerank`, contract is `query` + `texts`):
 
 ```bash
 curl http://localhost:6008/rerank \
   -H 'Content-Type: application/json' \
-  -d '{"query": "что такое llama.cpp", "texts": ["llama.cpp — это C/C++ инференс LLM", "сегодня хорошая погода"], "top_n": 1}'
+  -d '{"query": "что такое llama.cpp", "texts": ["llama.cpp — это C/C++ инференс LLM", "сегодня хорошая погода"]}'
 ```
+
+Response is a plain JSON array sorted by descending `score`, all inputs returned:
+
+```json
+[{"index": 0, "score": 0.98}, {"index": 1, "score": 0.02}]
+```
+
+> **`top_n` is not implemented by TEI.** It appears in the older
+> `build/test_models.md` examples, but the router ignores the field and returns
+> every text — trim the list in the caller if you need top-N.
 
 If you need both `vllm-qwen` and `reranker-gpu` at once, lower
 `VLLM_GPU_MEMORY_UTILIZATION` (e.g. `0.85`) to leave VRAM for the reranker and

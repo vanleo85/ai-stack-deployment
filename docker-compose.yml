@@ -127,6 +127,9 @@ services:
       - "${RERANKER_GPU_PORT:-6008}:80"
     environment:
       HF_HOME: "/data"
+      # Явный путь кеша: в CUDA-образе TEI кеш модели заводится через
+      # HUGGINGFACE_HUB_CACHE, а HF_HOME — отдельная переменная.
+      HUGGINGFACE_HUB_CACHE: "/data"
       HF_TOKEN: ${HF_TOKEN}
     volumes:
       - ./data/hf-cache:/data
@@ -149,7 +152,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 180s
+      start_period: 300s
     logging:
       driver: json-file
       options:
