@@ -113,3 +113,45 @@ services:
       options:
         max-size: "50m"
         max-file: "3"
+
+  # GPU-аналог сервиса `reranker`: тот же TEI, та же модель и тот же API
+  # POST /rerank (query + texts + top_n), но с ускорением на NVIDIA GPU.
+  # Работает на той же видеокарте, что и vllm-qwen. Резервация GPU даёт
+  # доступ к устройству, но НЕ резервирует VRAM — чтобы избежать конфликта
+  # памяти, поднимайте этот сервис при отключённом vllm-qwen
+  # (docker compose stop vllm-qwen), либо снизьте VLLM_GPU_MEMORY_UTILIZATION.
+  reranker-gpu:
+    image: ghcr.io/huggingface/text-embeddings-inference:${RERANKER_GPU_IMAGE_TAG:-89-1.9}
+    restart: unless-stopped
+    ports:
+      - "${RERANKER_GPU_PORT:-6008}:80"
+    environment:
+      HF_HOME: "/data"
+      HF_TOKEN: ${HF_TOKEN}
+    volumes:
+      - ./data/hf-cache:/data
+    command:
+      [
+        "--model-id", "${RERANKER_GPU_MODEL:-BAAI/bge-reranker-v2-m3}",
+        "--dtype", "${RERANKER_GPU_DTYPE:-float16}",
+        "--max-batch-tokens", "${RERANKER_GPU_MAX_BATCH_TOKENS:-16384}",
+        "--max-client-batch-size", "${RERANKER_GPU_MAX_CLIENT_BATCH_SIZE:-64}"
+      ]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:80/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 180s
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
