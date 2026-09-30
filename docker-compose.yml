@@ -83,6 +83,54 @@ services:
         max-size: "50m"
         max-file: "3"
 
+  # GPU-аналог сервиса `embedding`: тот же TEI, та же модель и тот же API
+  # POST /embed (inputs -> [[float x 1024]]), но с ускорением на NVIDIA GPU.
+  # Пулинг TEI берёт из 1_Pooling/config.json модели (у bge-m3 это CLS),
+  # поэтому --pooling не указываем — как и в CPU-варианте.
+  # Делит видеокарту с vllm-qwen и reranker-gpu: резервация GPU даёт доступ
+  # к устройству, но НЕ резервирует VRAM. При отключённом vllm-qwen оба
+  # GPU-сервиса уживаются (~5 GB из 24 GB).
+  embedding-gpu:
+    image: ghcr.io/huggingface/text-embeddings-inference:${EMBEDDING_GPU_IMAGE_TAG:-89-1.9}
+    restart: unless-stopped
+    ports:
+      - "${EMBEDDING_GPU_PORT:-6009}:80"
+    environment:
+      HF_HOME: "/data"
+      # TEI-образы (и CPU, и CUDA) сами ставят HUGGINGFACE_HUB_CACHE=/data
+      # через ENV в Dockerfile, поэтому общий том ./data/hf-cache
+      # переиспользуется между CPU- и GPU-сервисами — модель не качается дважды.
+      # HF_HOME — отдельная переменная и на путь кеша Hub не влияет.
+      HUGGINGFACE_HUB_CACHE: "/data"
+      HF_TOKEN: ${HF_TOKEN}
+    volumes:
+      - ./data/hf-cache:/data
+    command:
+      [
+        "--model-id", "${EMBEDDING_GPU_MODEL:-BAAI/bge-m3}",
+        "--dtype", "${EMBEDDING_GPU_DTYPE:-float16}",
+        "--max-batch-tokens", "${EMBEDDING_GPU_MAX_BATCH_TOKENS:-16384}",
+        "--max-client-batch-size", "${EMBEDDING_GPU_MAX_CLIENT_BATCH_SIZE:-64}"
+      ]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:80/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 300s
+    logging:
+      driver: json-file
+      options:
+        max-size: "50m"
+        max-file: "3"
+
   reranker:
     image: ghcr.io/huggingface/text-embeddings-inference:cpu-latest
     restart: unless-stopped
@@ -127,8 +175,10 @@ services:
       - "${RERANKER_GPU_PORT:-6008}:80"
     environment:
       HF_HOME: "/data"
-      # Явный путь кеша: в CUDA-образе TEI кеш модели заводится через
-      # HUGGINGFACE_HUB_CACHE, а HF_HOME — отдельная переменная.
+      # TEI-образы (и CPU, и CUDA) сами ставят HUGGINGFACE_HUB_CACHE=/data
+      # через ENV в Dockerfile, поэтому общий том ./data/hf-cache
+      # переиспользуется между CPU- и GPU-сервисами — модель не качается дважды.
+      # HF_HOME — отдельная переменная и на путь кеша Hub не влияет.
       HUGGINGFACE_HUB_CACHE: "/data"
       HF_TOKEN: ${HF_TOKEN}
     volumes:

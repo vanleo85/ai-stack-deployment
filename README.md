@@ -51,7 +51,44 @@ watch both services for OOM.
 > `gpu-latest`. Set `RERANKER_GPU_IMAGE_TAG` to match your card (RTX 4090 →
 > `89-<ver>`). The full GPU → tag table is in `.env.example`.
 
-### 3. Run load tests
+### 3. GPU embedding (optional)
+
+`embedding-gpu` is the GPU twin of `embedding`: same TEI image family, same
+model, same `POST /embed` API. The ops notes from the GPU reranker apply here
+too — free the GPU first, and see the GPU → tag table in `.env.example`.
+
+```bash
+docker compose stop vllm-qwen
+docker compose up -d embedding-gpu
+curl http://localhost:6009/health
+```
+
+Smoke test (`POST /embed`, contract is `inputs`):
+
+```bash
+curl http://localhost:6009/embed \
+  -H 'Content-Type: application/json' \
+  -d '{"inputs": "что такое llama.cpp"}'
+```
+
+Response is `[[float x 1024]]`, L2-normalized (`normalize` defaults to `true`).
+Pooling is read by TEI from the model's `1_Pooling/config.json` (CLS for
+`bge-m3` — matching BAAI's own `sentence_pooling_method='cls'`), so no
+`--pooling` flag is needed.
+
+> **Long inputs are silently truncated.** TEI's `--auto-truncate` defaults to
+> `true`, and `bge-m3` supports 8192 tokens — an over-long document is cut, not
+> rejected. Chunk long documents client-side if full coverage matters. The same
+> applies to the CPU `embedding` service.
+
+> **Check quality against the CPU reference.** The GPU service runs `float16`
+> (needed for Flash Attention) while the CPU one runs `float32`. Cosine
+> similarity between `:6006` and `:6009` vectors for the same input should be
+> ≈ 1.0 — if it drops noticeably, set `EMBEDDING_GPU_DTYPE=float32`.
+
+Both GPU services fit on one card while `vllm-qwen` is off (~5 GB of 24 GB).
+
+### 4. Run load tests
 
 ```bash
 cd llm_tests
